@@ -249,8 +249,8 @@ static void device_uuid_search(ble_gap_evt_adv_report_t const * p_adv_report)
 
 
             NRF_LOG_INFO("128 bit UUID: %s",nrf_log_push(string_addr_buf));
-            //NRF_LOG_INFO("Hexdump:");
-            //NRF_LOG_HEXDUMP_INFO(p_parsed_uuid,parsed_uuid_len);
+            NRF_LOG_INFO("Hexdump:");
+            NRF_LOG_HEXDUMP_INFO(p_parsed_uuid,parsed_uuid_len);
 
             return;
         }
