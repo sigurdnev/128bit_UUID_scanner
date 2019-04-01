@@ -158,7 +158,7 @@ typedef struct
 } data_t;
 
 
-static void device_to_list_add(ble_gap_evt_adv_report_t const * p_adv_report)
+static void device_uuid_search(ble_gap_evt_adv_report_t const * p_adv_report)
 {
     uint8_t  idx             = 0;
     uint16_t dev_name_offset = 0;
@@ -172,7 +172,7 @@ static void device_to_list_add(ble_gap_evt_adv_report_t const * p_adv_report)
 
     for ( idx = 0; idx < DEVICE_TO_FIND_MAX; idx++)
     {
-        // If address is duplicated, then return.
+        // If address is duplicated(already in the list), then return.
         if (memcmp(p_adv_report->peer_addr.addr,
                    m_device[idx].addr,
                    sizeof(p_adv_report->peer_addr.addr)) == 0)
@@ -184,11 +184,10 @@ static void device_to_list_add(ble_gap_evt_adv_report_t const * p_adv_report)
     // Device is not in the list.
     for (idx = 0; idx < DEVICE_TO_FIND_MAX; idx++)
     {
-        if (!m_device[idx].is_not_empty) // We find an empty entry
+        if (!m_device[idx].is_not_empty) // We find an empty entry in the list
         {
             
             uint16_t        data_offset = 0;
-
             uint8_t         ad_types[N_AD_TYPES];
             uint8_t       * p_parsed_uuid;
             uint16_t        parsed_uuid_len = adv_data.data_len;
@@ -206,16 +205,20 @@ static void device_to_list_add(ble_gap_evt_adv_report_t const * p_adv_report)
                 // Could not find any relevant UUIDs in the encoded data. We don't add the device to the list.
                 return;
             }
-            p_parsed_uuid = &adv_data.p_data[data_offset];
+			
+            p_parsed_uuid = &adv_data.p_data[data_offset]; //The UUID we found
 
-            m_device[idx].is_not_empty = true; //validating the list record
+            m_device[idx].is_not_empty = true; //Validating the list record
 
+			//Copy the UUID to our list of devices
             memset(m_device[idx].uuid_buffer_1,0,UUID128_SIZE);
             memcpy(m_device[idx].uuid_buffer_1, p_parsed_uuid, parsed_uuid_len);
 
             memcpy(m_device[idx].addr,
             p_adv_report->peer_addr.addr,
             sizeof(p_adv_report->peer_addr.addr));
+			
+			// Printing of device address and UUID
 
              NRF_LOG_INFO("Device-addr %02x:%02x:%02x:%02x:%02x:%02x",
              p_adv_report->peer_addr.addr[5],
@@ -225,7 +228,8 @@ static void device_to_list_add(ble_gap_evt_adv_report_t const * p_adv_report)
              p_adv_report->peer_addr.addr[1],
              p_adv_report->peer_addr.addr[0]
              );
-
+			 
+			 //Printing UUID in "8-4-4-4-12" format
              char string_addr_buf[100] = {0};
              char buffer[100] = {0};
 
@@ -245,8 +249,8 @@ static void device_to_list_add(ble_gap_evt_adv_report_t const * p_adv_report)
 
 
             NRF_LOG_INFO("128 bit UUID: %s",nrf_log_push(string_addr_buf));
-            NRF_LOG_INFO("Hexdump:");
-            NRF_LOG_HEXDUMP_INFO(p_parsed_uuid,parsed_uuid_len);
+            //NRF_LOG_INFO("Hexdump:");
+            //NRF_LOG_HEXDUMP_INFO(p_parsed_uuid,parsed_uuid_len);
 
             return;
         }
@@ -608,7 +612,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
          case BLE_GAP_EVT_ADV_REPORT:
 
-               device_to_list_add(&p_ble_evt->evt.gap_evt.params.adv_report);
+               device_uuid_search(&p_ble_evt->evt.gap_evt.params.adv_report);
             
 
               break;
